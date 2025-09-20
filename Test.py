@@ -37,24 +37,27 @@ def find_fundamental(data, sample_rate):
 
     freqs = np.fft.rfftfreq(len(data), 1/sample_rate) 
 
-    peak_indices, properties = find_peaks(magnitude, height = 500, width=20,)
-    # Remember to change prominence
+    peak_indices, properties = find_peaks(magnitude, height = np.max(magnitude)*.1)
 
     peak_frequencies = freqs[peak_indices]
     peak_magnitudes = magnitude[peak_indices]
 
     frequency_peaks = list(peak_frequencies)
 
+
     for i in range(len(peak_frequencies)):
         frequency_peaks[i] = int(peak_frequencies[i])
 
     print(peak_frequencies)
     
-    fundamental_frequency = math.gcd(*frequency_peaks)
+    if len(frequency_peaks)>0:
+        fundamental_frequency_idx = peak_indices[0]
+        fundamental_frequency = freqs[fundamental_frequency_idx]
 
-    fig, ax = plt.subplots()
-    ax.plot(freqs, magnitude)
-    plt.show()
+
+    #fig, ax = plt.subplots()
+    #ax.plot(freqs, magnitude)
+    #plt.show()
 
     return fundamental_frequency
 
