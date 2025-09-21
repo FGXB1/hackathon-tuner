@@ -71,9 +71,28 @@ def audio_record():
     print("Recording finished")
     write("anything.wav", sample_rate, recording)
 
+def desired_pitch(desired, close_note):
+    if desired == close_note:
+        print("In Tune")
+        return True
+    elif desired[1] < close_note[1]:
+        print("Tune Lower")
+    elif desired[1] > close_note[1]: 
+        print("Tune Higher")
+    else:
+        if desired[0]< close_note[0]:
+            print("Tune Lower")
+        elif desired[0]> close_note[0]:
+            print("Tune Higher")
+    return False
+            
+
+
 
 def main():
     # if __name__ == '__main__':
+    
+    
     print("audio_record()")
     audio_record()
     print("audio_import()")
@@ -85,5 +104,10 @@ def main():
 
     print(f"Close Note: {close_note}")
     print(f"Close Pitch: {close_pitch}")
-    
-main()
+    in_tune = desired_pitch(desired, close_note)
+
+in_tune = False
+print("Hello")
+desired = input("Enter desired note (E2-E4): ") 
+while in_tune == False:
+    main()
