@@ -13,36 +13,66 @@ from scipy.io.wavfile import write
 import wave
 import asyncio
 from nicegui import tailwind, ui
+from pygame import mixer
+
+mixer.init()
+tune_up = mixer.Sound("TuneHigher.wav")
+tune_down = mixer.Sound("TuneLower.wav")
+tune_in = mixer.Sound("InTune.dat.wav")
 
 
 record = False
 
+CELESTIAL = {
+    'dark': '#0A0A12',
+    'deep_blue': '#2C355C',
+    'mid_blue': '#464C7E',
+    'purple': '#8B6C8E',
+    'lavender': '#E4CED3',
+}
+
 dark = ui.dark_mode()
 dark.enable()
+ui.query('body').style(f'background-color: #101426;')
 close_note = "A2"
 global i, desired
 i = 0
 
-record_button = ui.button('Record', on_click=lambda: toggle_record()).style('margin: auto; width: 50%;')
+record_button = ui.button('Record', on_click=lambda: toggle_record(), color=CELESTIAL["purple"]).style(f'''
+    margin: auto;
+    margin-top: 100px;
+    width: 50%;
+    border-radius: 12px;
+''')
 
-with ui.card().classes('relative w-64 h-32 bg-blue-200'):
-    
-    note_icon = ui.icon('music_note', size='100px').style('margin: auto; width: 50%;').classes('absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-yellow-400 p-2')
-
-
+with ui.card().classes('relative w-64 h-5 bg-blue-200').style(\
+    f'margin: auto; margin-top: 40px; width: 50%; \
+    background: #000000;\
+    background: linear-gradient(\
+    90deg, rgba(0, 0, 0, 1) 0%, rgba(36, 44, 83, 1) 18%,\
+        rgba(147, 115, 156, 1) 35%,\
+        rgba(235, 212, 218, 1) 53%, \
+        rgba(147, 115, 156, 1) 67%, \
+        rgba(36, 44, 83, 1) 82%, \
+        rgba(0, 0, 0, 1) 100%);'\
+):
+    note_icon = ui.icon('music_note', size='100px').style(f'margin: auto; width: 50%; color: #E3D1E8;').classes('absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-2')
 
 ui.add_head_html('''
     <style>
         @keyframes slideLeft {
-            100% { transform: translateX(-80%); }
+            from { transform: translateY(-50%) }
+            to { transform: translateX(-100%) translateY(-50%); }
         } 
 
         @keyframes slideRight {
-            100% { transform: translateX(80%); }
+            from { transform: translateY(-50%) }
+            to { transform: translateX(100%) translateY(-50%); }
         }
         
         @keyframes slideMiddle {
-            100% { transform: translateX(0%); }
+            from { transform: translateY(-50%) }
+            to { transform: translateX(0%) translateY(-50%); }
         }
 
         .slide-left {       
@@ -59,52 +89,40 @@ ui.add_head_html('''
             animation: slideMiddle 2s;
             animation-fill-mode: forwards;
         }
-        
-        .slide-across-left {
-            animation: slideAcrossLeft 2s;
-            animation-fill-mode: forwards;
-        }
                  
-        .slide-across-right {
-            animation: slideAcrossRight 2s;
-            animation-fill-mode: forwards;
+        input[type="radio"] {
+            accent-color: #E4CED3l;    
         }
-                 
     </style>
 ''')
 
 def main():
     
-    with ui.row().style('margin: auto; margin-top: 10px; width: 50%; justify-content: center; align-items: center;'):
-        # left_select.value = ["E2", "A2", "D3"]
-        left_select = ui.radio(["E2", "A2", "D3"]).bind_value(globals(), 'desired')
-        note_label = ui.label(close_note).style('margin: auto; margin-top: 10px; text-align: center; font-size: 100px;')
-        # right_select.value = ["G3", "B3", "E4"]
-        right_select = ui.radio(["G3", "B3", "E4"]).bind_value(globals(), 'desired')
-    ui.button('Submit', on_click=lambda: pitch_indentification(note_icon)).style('margin: auto; width: 50%;')
+    with ui.row().style(f'margin: auto; margin-top: 10px; width: 50%; justify-content: center; align-items: center;'):
+        # select_note.value = ["E2", "A2", "D3"]
+        note_label = ui.label(close_note).style(f'margin: auto; text-align: center; font-size: 100px; color: {CELESTIAL["lavender"]};')
+        select_note = ui.radio(["E2", "A2", "D3", "G3", "B3", "E4"]).props("inline").bind_value(globals(), 'desired').style(f'accent-color: {CELESTIAL["lavender"]};')
+    ui.button('Tune', on_click=lambda: pitch_indentification(note_icon, note_label), color=CELESTIAL["purple"]).style(f'margin: auto; width: 50%; border-radius: 12px;')
 
 def toggle_record():
     global record
-    i=0
+    i = 0
     record = not record
     ui.label(record)
     record_button.set_text('Stop' if record else 'Record')
     if record_button.clicked:
-        i = i+1
-    if i%2==1:
+        i = i + 1
+    if i % 2 == 1:
         main()
     else:
         return
     
-        
-
 ui.run()
-
 
 # Pitch detection 
 concert_pitch = 440
 notes = ["A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#"]
-def detect_pitch(fundamental_frequency):
+def detect_pitch(fundamental_frequency, note_label):
     semitone_freq = int(np.round(np.log2(fundamental_frequency/concert_pitch)*12)) 
     close_note = notes[semitone_freq%12] + str(abs(4+(semitone_freq+9) // 12))
     note_label.text = close_note
@@ -144,11 +162,6 @@ def find_fundamental(data, sample_rate):
         fundamental_frequency_idx = peak_indices[0]
         fundamental_frequency = freqs[fundamental_frequency_idx]
 
-
-    #fig, ax = plt.subplots()
-    #ax.plot(freqs, magnitude)
-    #plt.show()
-
     return fundamental_frequency
 
 # Audio recording
@@ -167,15 +180,9 @@ def set_animation(note_icon, new_dir):
         return
 
     if new_dir == "left":
-        # if note_icon.classes.contains("slide-right"):
-        #     note_icon.classes(replace="slide-across-left")
-        # else:
         note_icon.classes(replace='slide-middle')
         note_icon.classes(replace="slide-left")
     elif new_dir == "right":
-        # if note_icon.classes.contains("slide-left"):
-        #     note_icon.classes(replace="slide-across-right")
-        # else:
         note_icon.classes(replace='slide-middle')
         note_icon.classes(replace="slide-right")
 
@@ -198,75 +205,30 @@ def desired_pitch(desired, close_note, note_icon):
         cnumber = int(close_note[2])
     if desired == close_note:
         ui.notify("In Tune")
+        tune_in.play()
         set_animation(note_icon, "middle")
         return True
     
     if dnumber < cnumber:
         ui.notify("Tune Down")
+        tune_down.play()
         set_animation(note_icon, "right")
     elif dnumber > cnumber: 
         ui.notify("Tune Up")
+        tune_up.play()
         set_animation(note_icon, "left")
     else:
         if dict[dchar] < dict[cchar]:
             ui.notify("Tune Down")
+            tune_down.play()
             set_animation(note_icon, "right")
         else:
             ui.notify("Tune Up")
+            tune_up.play()
             set_animation(note_icon, "left")
     return False
 
-    
-    # if len(desired) == 2:
-    #     dchar = desired[0]
-    #     dnumber = desired[1]
-    # elif len(desired) == 3: 
-    #     dchar = desired[0]
-    #     dnumber = desired[2]
-    # if len(close_note) == 2:
-    #     cchar = close_note[0]
-    #     cnumber = close_note[1]
-    # elif len(close_note) == 3:
-    #     cchar = close_note[0]
-    #     cnumber = close_note[2]
-    
-    # if desired == close_note:
-    #     ui.notify("In Tune")
-    #     note_icon.classes(replace ='')
-    #     note_icon.classes(add='slide-middle')
-    #     return True
-    # elif dnumber < cnumber:
-    #     ui.notify("Tune Lower")
-    #     note_icon.classes(replace = 'slide-middle')
-    #     note_icon.classes(add='slide-right')
-    # elif dnumber > cnumber: 
-    #     ui.notify("Tune Higher")
-    #     note_icon.classes(replace='')
-    #     note_icon.classes(add='slide-left')
-    # else:
-    #     if dchar < cchar:
-    #         ui.notify("Tune Lower")
-    #         note_icon.classes(replace ='slide-middle')
-    #         note_icon.classes(add='slide-right')
-    #     elif dchar > cchar:
-    #         ui.notify("Tune Higher")
-    #         note_icon.classes(replace = 'slide-middle')
-    #         note_icon.classes(add='slide-left')
-    #     else:
-    #         if len(desired) > len(close_note):
-    #             ui.notify("Tune Higher")
-    #             note_icon.classes(replace = 'slide-middle')
-    #             note_icon.classes(add='slide-left')
-    #         elif len(desired) < len(close_note):
-    #             ui.notify("Tune Lower")
-    #             note_icon.classes(replace ='slide-middle')
-    #             note_icon.classes(add='slide-right')
-    # return False
-
-
-
-    
-async def pitch_indentification(music_note):
+async def pitch_indentification(music_note, note_label):
     global in_tune 
     in_tune = False
     while not in_tune:
@@ -277,12 +239,11 @@ async def pitch_indentification(music_note):
         # ui.notify("find_peaks()")
         fundamental_frequency = find_fundamental(data, sample_rate)
         # ui.notify("detect_pitch()")
-        close_note, close_pitch = detect_pitch(fundamental_frequency)
-
+        close_note, close_pitch = detect_pitch(fundamental_frequency, note_label)
         
         # ui.notify(f"Close Pitch: {close_pitch}")
         in_tune = desired_pitch(desired, close_note, music_note)
         if in_tune:
             ui.notify("In Tune", color='positive')
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(1)
 # main()
