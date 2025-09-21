@@ -15,12 +15,14 @@ from nicegui import ui
 
 
 record = False
+
+
 def toggle_record():
     global record
     global i
     i=0
     record = not record
-    print(record)
+    ui.label(record)
     record_button.set_text('Stop' if record else 'Record')
     if record_button.clicked:
         i = i+1
@@ -71,7 +73,7 @@ def find_fundamental(data, sample_rate):
     for i in range(len(peak_frequencies)):
         frequency_peaks[i] = int(peak_frequencies[i])
 
-    print(peak_frequencies)
+    # ui.label(peak_frequencies)
     
     if len(frequency_peaks)>0:
         fundamental_frequency_idx = peak_indices[0]
@@ -88,10 +90,10 @@ def find_fundamental(data, sample_rate):
 def audio_record():
     sample_rate = 44100
     duration = 3        
-    print("Recording audio")
+    ui.label("Recording audio")
     recording = sd.rec(int(duration * sample_rate), samplerate=sample_rate, channels=1)
     sd.wait()
-    print("Recording finished")
+    ui.label("Recording finished")
     write("anything.wav", sample_rate, recording)
 
 def desired_pitch(desired, close_note):
@@ -109,41 +111,47 @@ def desired_pitch(desired, close_note):
         cnumber = close_note[2]
     
     if desired == close_note:
-        print("In Tune")
+        ui.label("In Tune")
         return True
     elif dnumber < cnumber:
-        print("Tune Lower")
+        ui.label("Tune Lower")
     elif dnumber > cnumber: 
-        print("Tune Higher")
+        ui.label("Tune Higher")
     else:
         if dchar < cchar:
-            print("Tune Lower")
+            ui.label("Tune Lower")
         elif dchar > cchar:
-            print("Tune Higher")
+            ui.label("Tune Higher")
         else:
             if len(desired) > len(close_note):
-                print("Tune Higher")
+                ui.label("Tune Higher")
             elif len(desired) < len(close_note):
-                print("Tune Lower")
+                ui.label("Tune Lower")
     return False
 
-
 def main():
-    desired = input("Enter desired note (E2-E4): ") 
+    global desired
+    ui.input("Enter desired note (E2-E4):").bind_value(globals(), 'desired')
+    ui.button('Submit', on_click=lambda: pitch_indentification())
+
+
+    
+def pitch_indentification():
     global in_tune 
     in_tune = False
-    
-    while in_tune == False:
-        print("audio_record()")
+    while not in_tune:
+        ui.notify("audio_record()")
         audio_record()
-        print("audio_import()")
+        ui.notify("audio_import()")
         data, sample_rate = audio_import('anything.wav')
-        print("find_peaks()")
+        ui.notify("find_peaks()")
         fundamental_frequency = find_fundamental(data, sample_rate)
-        print("detect_pitch()")
+        ui.notify("detect_pitch()")
         close_note, close_pitch = detect_pitch(fundamental_frequency)
 
-        print(f"Close Note: {close_note}")
-        print(f"Close Pitch: {close_pitch}")
+        ui.notify(f"Close Note: {close_note}")
+        ui.notify(f"Close Pitch: {close_pitch}")
         in_tune = desired_pitch(desired, close_note)
+        if in_tune:
+            ui.notify("In Tune", color='positive')
 # main()
