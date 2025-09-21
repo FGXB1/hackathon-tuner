@@ -11,6 +11,7 @@ from scipy import fft
 import math
 from scipy.io.wavfile import write
 import wave
+import asyncio
 from nicegui import ui
 
 
@@ -136,22 +137,23 @@ def main():
 
 
     
-def pitch_indentification():
+async def pitch_indentification():
     global in_tune 
     in_tune = False
     while not in_tune:
-        ui.notify("audio_record()")
+        # ui.notify("audio_record()")
         audio_record()
-        ui.notify("audio_import()")
+        # ui.notify("audio_import()")
         data, sample_rate = audio_import('anything.wav')
-        ui.notify("find_peaks()")
+        # ui.notify("find_peaks()")
         fundamental_frequency = find_fundamental(data, sample_rate)
-        ui.notify("detect_pitch()")
+        # ui.notify("detect_pitch()")
         close_note, close_pitch = detect_pitch(fundamental_frequency)
 
-        ui.notify(f"Close Note: {close_note}")
-        ui.notify(f"Close Pitch: {close_pitch}")
+        ui.notify(f"You're playing a {close_note}")
+        # ui.notify(f"Close Pitch: {close_pitch}")
         in_tune = desired_pitch(desired, close_note)
         if in_tune:
             ui.notify("In Tune", color='positive')
+        await asyncio.sleep(0.1)
 # main()
