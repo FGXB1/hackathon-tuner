@@ -37,24 +37,27 @@ def find_fundamental(data, sample_rate):
 
     freqs = np.fft.rfftfreq(len(data), 1/sample_rate) 
 
-    peak_indices, properties = find_peaks(magnitude, height = 500, width=20,)
-    # Remember to change prominence
+    peak_indices, properties = find_peaks(magnitude, height = np.max(magnitude)*.1)
 
     peak_frequencies = freqs[peak_indices]
     peak_magnitudes = magnitude[peak_indices]
 
     frequency_peaks = list(peak_frequencies)
 
+
     for i in range(len(peak_frequencies)):
         frequency_peaks[i] = int(peak_frequencies[i])
 
     print(peak_frequencies)
     
-    fundamental_frequency = math.gcd(*frequency_peaks)
+    if len(frequency_peaks)>0:
+        fundamental_frequency_idx = peak_indices[0]
+        fundamental_frequency = freqs[fundamental_frequency_idx]
 
-    fig, ax = plt.subplots()
-    ax.plot(freqs, magnitude)
-    plt.show()
+
+    #fig, ax = plt.subplots()
+    #ax.plot(freqs, magnitude)
+    #plt.show()
 
     return fundamental_frequency
 
@@ -68,9 +71,44 @@ def audio_record():
     print("Recording finished")
     write("anything.wav", sample_rate, recording)
 
+def desired_pitch(desired, close_note):
+    if len(desired) == 2:
+        dchar = desired[0]
+        dnumber = desired[1]
+    elif len(desired) == 3: 
+        dchar = desired[0]
+        dnumber = desired[2]
+    if len(close_note) == 2:
+        cchar = close_note[0]
+        cnumber = close_note[1]
+    elif len(close_note) == 3:
+        cchar = close_note[0]
+        cnumber = close_note[2]
+    
+    if desired == close_note:
+        print("In Tune")
+        return True
+    elif dnumber < cnumber:
+        print("Tune Lower")
+    elif dnumber > cnumber: 
+        print("Tune Higher")
+    else:
+        if dchar < cchar:
+            print("Tune Lower")
+        elif dchar > cchar:
+            print("Tune Higher")
+        else:
+            if len(desired) > len(close_note):
+                print("Tune Higher")
+            elif len(desired) < len(close_note):
+                print("Tune Lower")
+    return False
+
 
 def main():
     # if __name__ == '__main__':
+    global in_tune
+    
     print("audio_record()")
     audio_record()
     print("audio_import()")
@@ -82,5 +120,9 @@ def main():
 
     print(f"Close Note: {close_note}")
     print(f"Close Pitch: {close_pitch}")
-    
-main()
+    in_tune = desired_pitch(desired, close_note)
+
+in_tune = False
+desired = input("Enter desired note (E2-E4): ") 
+while in_tune == False:
+    main()
