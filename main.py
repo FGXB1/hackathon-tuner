@@ -11,6 +11,29 @@ from scipy import fft
 import math
 from scipy.io.wavfile import write
 import wave
+from nicegui import ui
+
+
+record = False
+def toggle_record():
+    global record
+    global i
+    i=0
+    record = not record
+    print(record)
+    record_button.set_text('Stop' if record else 'Record')
+    if record_button.clicked:
+        i = i+1
+    if i%2==1:
+        main()
+    else:
+        return
+    
+        
+record_button = ui.button('Record', on_click=lambda: toggle_record())
+
+ui.run()
+
 
 # Pitch detection 
 concert_pitch = 440
@@ -64,7 +87,7 @@ def find_fundamental(data, sample_rate):
 # Audio recording
 def audio_record():
     sample_rate = 44100
-    duration = 3
+    duration = 3        
     print("Recording audio")
     recording = sd.rec(int(duration * sample_rate), samplerate=sample_rate, channels=1)
     sd.wait()
@@ -106,23 +129,21 @@ def desired_pitch(desired, close_note):
 
 
 def main():
-    # if __name__ == '__main__':
-    global in_tune
+    desired = input("Enter desired note (E2-E4): ") 
+    global in_tune 
+    in_tune = False
     
-    print("audio_record()")
-    audio_record()
-    print("audio_import()")
-    data, sample_rate = audio_import('anything.wav')
-    print("find_peaks()")
-    fundamental_frequency = find_fundamental(data, sample_rate)
-    print("detect_pitch()")
-    close_note, close_pitch = detect_pitch(fundamental_frequency)
+    while in_tune == False:
+        print("audio_record()")
+        audio_record()
+        print("audio_import()")
+        data, sample_rate = audio_import('anything.wav')
+        print("find_peaks()")
+        fundamental_frequency = find_fundamental(data, sample_rate)
+        print("detect_pitch()")
+        close_note, close_pitch = detect_pitch(fundamental_frequency)
 
-    print(f"Close Note: {close_note}")
-    print(f"Close Pitch: {close_pitch}")
-    in_tune = desired_pitch(desired, close_note)
-
-in_tune = False
-desired = input("Enter desired note (E2-E4): ") 
-while in_tune == False:
-    main()
+        print(f"Close Note: {close_note}")
+        print(f"Close Pitch: {close_pitch}")
+        in_tune = desired_pitch(desired, close_note)
+# main()
